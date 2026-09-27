@@ -92,14 +92,15 @@ final class SpotifyWatcher: ObservableObject {
     }
 
     func nextTrack() { send("next track") }
-    func previousTrack() { send("previous track") }
+    /// Spotify's "previous track" restarts the song after ~3s; rewinding to 0 first forces a real skip back.
+    func previousTrack() { send("set player position to 0\n previous track") }
 
     private func send(_ command: String) {
         // Same guard as refresh(): don't let `tell application` launch Spotify.
         guard spotifyRunning else { return }
         queue.async {
             var error: NSDictionary?
-            NSAppleScript(source: "tell application \"Spotify\" to \(command)")?.executeAndReturnError(&error)
+            NSAppleScript(source: "tell application \"Spotify\"\n\(command)\nend tell")?.executeAndReturnError(&error)
             if let error { NSLog("AppleScript error: \(error)") }
         }
     }
