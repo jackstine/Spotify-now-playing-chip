@@ -17,6 +17,7 @@ final class SpotifyWatcher: ObservableObject {
     enum AddState { case idle, working, done, failed }
     @Published private(set) var addState = AddState.idle
 
+    @Published private(set) var onPlaylist = false   // current track already on the selected playlist
     @Published private(set) var playlistName = SpotifyAPI.playlistName
 
     private let queue = DispatchQueue(label: "SpotifyWatcher")
@@ -54,6 +55,7 @@ final class SpotifyWatcher: ObservableObject {
             do {
                 if try await !SpotifyAPI.shared.addToPlaylist(uri: uri) { NSLog("Already in playlist, skipped") }
                 addState = .done
+                if track?.uri == uri { onPlaylist = true }
             }
             catch { NSLog("Add to playlist failed: \(error.localizedDescription)"); addState = .failed }
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -68,10 +70,24 @@ final class SpotifyWatcher: ObservableObject {
         case .found(let entry):
             Playlists.select(entry)
             playlistName = entry.name
+            onPlaylist = false
+            refreshOnPlaylist()
             Task { await SpotifyAPI.shared.warmUp() }
             return nil
         case .none: return "No playlist matches"
         case .ambiguous(let hits): return "Ambiguous, matches: " + hits.map(\.name).joined(separator: ", ")
+        }
+    }
+
+    /// Looks up whether the current track is on the selected playlist. Stale answers (track or playlist
+    /// changed meanwhile) are dropped; unknown counts as "not on it" so "+" stays usable.
+    func refreshOnPlaylist() {
+        guard let uri = track?.uri else { return }
+        let name = playlistName
+        Task { @MainActor [weak self] in
+            let result = await SpotifyAPI.shared.isOnPlaylist(uri: uri)
+            guard let self, self.track?.uri == uri, self.playlistName == name else { return }
+            self.onPlaylist = result ?? false
         }
     }
 
@@ -113,7 +129,9 @@ final class SpotifyWatcher: ObservableObject {
     }
 
     private func apply(_ new: Track?) {
+        let trackChanged = new?.uri != track?.uri
         if new != track { track = new }
+        if trackChanged { onPlaylist = false; refreshOnPlaylist() }
         guard let url = new?.artworkURL, url != loadedArtworkURL else { return }
         loadedArtworkURL = url
         artworkTask?.cancel()

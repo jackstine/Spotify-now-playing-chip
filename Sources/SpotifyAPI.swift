@@ -107,12 +107,51 @@ final class SpotifyAPI {
         }
     }
 
+    private struct PlaylistContents { var uris: Set<String>; let fetched: Date }
+    private var contents: [String: PlaylistContents] = [:]   // by playlist ID
+    private static let contentsTTL: TimeInterval = 300
+
+    /// Whether the track is on the selected playlist, or nil if unknown. Never starts a login: it only
+    /// works with a token already held or refreshable from the Keychain. Playlist contents are cached
+    /// so track changes don't re-read the whole playlist.
+    func isOnPlaylist(uri: String) async -> Bool? {
+        guard let token = await silentToken(), let id = try? await playlistID(token: token) else { return nil }
+        if let c = contents[id], c.fetched.timeIntervalSinceNow > -Self.contentsTTL { return c.uris.contains(uri) }
+        guard let uris = try? await fetchURIs(playlistID: id, token: token) else { return nil }
+        contents[id] = PlaylistContents(uris: uris, fetched: Date())
+        return uris.contains(uri)
+    }
+
+    private func silentToken() async -> String? {
+        if let t = accessToken, expiry > Date().addingTimeInterval(30) { return t }
+        guard let refresh = Keychain.get("refreshToken") else { return nil }
+        return try? await tokenRequest(["grant_type": "refresh_token", "refresh_token": refresh])
+    }
+
+    private func fetchURIs(playlistID: String, token: String) async throws -> Set<String> {
+        var uris = Set<String>()
+        var next: String? = "https://api.spotify.com/v1/playlists/\(playlistID)/tracks?limit=100&fields=items(track(uri)),next"
+        while let url = next {
+            var req = URLRequest(url: URL(string: url)!)
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            guard (resp as? HTTPURLResponse)?.statusCode == 200,
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]] else {
+                throw APIError("Could not read playlist: \(String(data: data, encoding: .utf8) ?? "")")
+            }
+            for item in items { if let u = (item["track"] as? [String: Any])?["uri"] as? String { uris.insert(u) } }
+            next = json["next"] as? String
+        }
+        return uris
+    }
+
     /// Adds the track unless it's already on the playlist. Returns false if it was already there.
     @discardableResult
     func addToPlaylist(uri: String) async throws -> Bool {
         let id = try await playlistID()
         let token = try await validToken()
-        if try await playlistContains(uri: uri, playlistID: id, token: token) { return false }
+        if try await playlistContains(uri: uri, playlistID: id, token: token) { contents[id]?.uris.insert(uri); return false }
         var req = URLRequest(url: URL(string: "https://api.spotify.com/v1/playlists/\(id)/tracks")!)
         req.httpMethod = "POST"
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -124,6 +163,7 @@ final class SpotifyAPI {
         guard (200..<300).contains(status) else {
             throw APIError("Add failed (\(status)): \(String(data: data, encoding: .utf8) ?? "")")
         }
+        contents[id]?.uris.insert(uri)
         return true
     }
 
@@ -144,10 +184,11 @@ final class SpotifyAPI {
         return false
     }
 
-    private func playlistID() async throws -> String {
+    private func playlistID(token given: String? = nil) async throws -> String {
         guard !Self.playlistName.isEmpty else { throw APIError("No playlists in \(Playlists.path) (see README)") }
         if let cached = UserDefaults.standard.string(forKey: Self.playlistCacheKey) { return cached }
-        let token = try await validToken()
+        let token: String
+        if let given { token = given } else { token = try await validToken() }
         var next: String? = "https://api.spotify.com/v1/me/playlists?limit=50"
         while let url = next {
             var req = URLRequest(url: URL(string: url)!)

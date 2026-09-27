@@ -16,7 +16,7 @@ struct ChipView: View {
     @ObservedObject var watcher: SpotifyWatcher
     private var buttonSymbol: String {
         switch watcher.addState {
-        case .idle: return "plus"
+        case .idle: return watcher.onPlaylist ? "checkmark" : "plus"
         case .working: return "ellipsis"
         case .done: return "checkmark"
         case .failed: return "exclamationmark"
@@ -57,7 +57,9 @@ struct ChipView: View {
                     .overlay(Circle().strokeBorder(Color.white.opacity(0.3), lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .help("Add to \(watcher.playlistName)")
+            .disabled(watcher.onPlaylist)
+            .opacity(watcher.onPlaylist ? 0.4 : 1)
+            .help(watcher.onPlaylist ? "Already on \(watcher.playlistName)" : "Add to \(watcher.playlistName)")
 
             Button(action: watcher.previousTrack) {
                 Image(systemName: "chevron.left.2")
