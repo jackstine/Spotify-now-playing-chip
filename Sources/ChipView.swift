@@ -57,7 +57,7 @@ struct ChipView: View {
                     .overlay(Circle().strokeBorder(Color.white.opacity(0.3), lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .help("Add to \(SpotifyAPI.playlistName)")
+            .help("Add to \(watcher.playlistName)")
 
             Button(action: watcher.previousTrack) {
                 Image(systemName: "chevron.left.2")

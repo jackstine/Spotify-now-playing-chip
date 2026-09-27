@@ -89,16 +89,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
     }
 
-    /// nowplayingchip://add | next | previous
+    /// nowplayingchip://add | next | previous | playlists | select?name=...|description=...
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls where url.scheme == "nowplayingchip" {
+            let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            func param(_ n: String) -> String? { query.first { $0.name == n }?.value }
             switch url.host {
+            case "playlists": showPlaylists()
+            case "select":
+                if let error = watcher.selectPlaylist(name: param("name"), description: param("description")) {
+                    NSLog("Select playlist failed: \(error)")
+                    NSSound.beep()
+                }
             case "add": watcher.addToPlaylist()
             case "next": watcher.nextTrack()
             case "previous": watcher.previousTrack()
             default: NSLog("Unknown command URL: \(url)")
             }
         }
+    }
+
+    func showPlaylists() {
+        let current = Playlists.selected?.name
+        let list = Playlists.all()
+        let alert = NSAlert()
+        alert.messageText = "Playlists"
+        alert.informativeText = list.isEmpty ? "None. Add them to \(Playlists.path)" : list.map {
+            let mark = $0.name == current ? "▶ " : "    "
+            return mark + $0.name + ($0.description.map { " — " + $0 } ?? "")
+        }.joined(separator: "\n")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     @objc func resetPosition() {

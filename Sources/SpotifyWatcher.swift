@@ -17,6 +17,8 @@ final class SpotifyWatcher: ObservableObject {
     enum AddState { case idle, working, done, failed }
     @Published private(set) var addState = AddState.idle
 
+    @Published private(set) var playlistName = SpotifyAPI.playlistName
+
     private let queue = DispatchQueue(label: "SpotifyWatcher")
     private var artworkTask: URLSessionDataTask?
     private var loadedArtworkURL: URL?
@@ -56,6 +58,20 @@ final class SpotifyWatcher: ObservableObject {
             catch { NSLog("Add to playlist failed: \(error.localizedDescription)"); addState = .failed }
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             addState = .idle
+        }
+    }
+
+    /// Switches the target playlist; returns an error message if the query doesn't pick exactly one.
+    @MainActor @discardableResult
+    func selectPlaylist(name: String?, description: String?) -> String? {
+        switch Playlists.find(name: name, description: description) {
+        case .found(let entry):
+            Playlists.select(entry)
+            playlistName = entry.name
+            Task { await SpotifyAPI.shared.warmUp() }
+            return nil
+        case .none: return "No playlist matches"
+        case .ambiguous(let hits): return "Ambiguous, matches: " + hits.map(\.name).joined(separator: ", ")
         }
     }
 

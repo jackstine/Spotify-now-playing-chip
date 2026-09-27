@@ -89,8 +89,8 @@ private final class CallbackServer {
 /// Spotify Web API (Authorization Code + PKCE) — only what "add to playlist" needs.
 final class SpotifyAPI {
     static let shared = SpotifyAPI()
-    /// Name of the playlist tracks are added to (SPOTIFY_PLAYLIST_NAME).
-    static var playlistName: String { Env.value("SPOTIFY_PLAYLIST_NAME") ?? "" }
+    /// Name of the playlist tracks are added to (see Playlists).
+    static var playlistName: String { Playlists.selected?.name ?? "" }
     private static var playlistCacheKey: String { "playlistID:\(playlistName)" }
 
     private let redirect = "http://127.0.0.1:8888/callback"
@@ -145,7 +145,7 @@ final class SpotifyAPI {
     }
 
     private func playlistID() async throws -> String {
-        guard !Self.playlistName.isEmpty else { throw APIError("SPOTIFY_PLAYLIST_NAME not set (see README: Configuration)") }
+        guard !Self.playlistName.isEmpty else { throw APIError("No playlists in \(Playlists.path) (see README)") }
         if let cached = UserDefaults.standard.string(forKey: Self.playlistCacheKey) { return cached }
         let token = try await validToken()
         var next: String? = "https://api.spotify.com/v1/me/playlists?limit=50"

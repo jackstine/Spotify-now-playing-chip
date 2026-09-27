@@ -1,0 +1,7 @@
+{
+  "default": "Favorites",
+  "playlists": [
+    { "name": "Favorites", "description": "everyday keepers" },
+    { "name": "Workout", "description": "high energy, gym" }
+  ]
+}
