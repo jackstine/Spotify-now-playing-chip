@@ -35,11 +35,17 @@ struct ChipView: View {
             .frame(width: 28, height: 28)
             .clipShape(RoundedRectangle(cornerRadius: 4))
 
-            Text(watcher.track?.name ?? "")
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(watcher.track?.name ?? "")
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Text(watcher.playlistName)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
             Text(watcher.track?.artist ?? "")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
