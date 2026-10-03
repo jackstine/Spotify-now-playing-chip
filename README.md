@@ -32,7 +32,7 @@ No client secret needed. Never commit `.env`.
 1. developer.spotify.com/dashboard > Create app
 2. Settings > Redirect URIs > add `http://127.0.0.1:8888/callback` > Add > **Save**. Exact: `127.0.0.1` not `localhost`, no trailing slash.
 3. Client ID > `.env`
-4. Create your playlists in Spotify (Your Library > + > Playlist) and list them in `~/.config/NowPlayingChip/playlists.json` (see Playlists). App never creates them.
+4. Create your playlists in Spotify (Your Library > + > Playlist) and list them in `~/.config/NowPlayingChip/playlists.json` (see Playlists). If a listed playlist is missing from your account, the app creates it (private) on first add.
 5. Click "+" on playing track > login page > Agree. Token in Keychain.
 
 Dashboard app name = label on login page only. Find playlist: Your Library, search full name. Added tracks at bottom.
@@ -96,7 +96,7 @@ Bad or ambiguous select: beep + log, current playlist unchanged.
 | Problem | Fix |
 |---|---|
 | `redirect_uri: Not matching configuration` | Step 2 above, Save |
-| `!` + log `No playlist named` | Create playlist or fix name in playlists.json |
+| `!` + log `Could not create playlist` | Check the log for the Spotify error (re-auth if scopes changed) |
 | `!` + log `No playlists in` | Create playlists.json; or `SPOTIFY_CLIENT_ID` not set: fill `.env`, rebuild |
 | Chip missing | Spotify must be playing; Automation permission (Settings > Privacy > Automation) |
 | Log `AppleEvent timed out` / `Auto-accept unavailable` | Chrome Apple Events JS setting off; click Agree manually |

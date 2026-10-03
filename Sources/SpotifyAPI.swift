@@ -205,7 +205,29 @@ final class SpotifyAPI {
             }
             next = json["next"] as? String
         }
-        throw APIError("No playlist named \"\(Self.playlistName)\" found")
+        return try await createPlaylist(token: token)
+    }
+
+    /// Creates the selected playlist (private) when the account doesn't have one with that name yet.
+    private func createPlaylist(token: String) async throws -> String {
+        var req = URLRequest(url: URL(string: "https://api.spotify.com/v1/me/playlists")!)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "name": Self.playlistName,
+            "description": Playlists.selected?.description ?? "",
+            "public": false,
+        ] as [String: Any])
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status),
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = json["id"] as? String else {
+            throw APIError("Could not create playlist \"\(Self.playlistName)\" (\(status)): \(String(data: data, encoding: .utf8) ?? "")")
+        }
+        UserDefaults.standard.set(id, forKey: Self.playlistCacheKey)
+        return id
     }
 
     // MARK: Auth
