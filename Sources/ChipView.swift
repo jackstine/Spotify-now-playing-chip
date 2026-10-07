@@ -37,6 +37,7 @@ struct ChipView: View {
             }
             .frame(width: 28, height: 28)
             .clipShape(RoundedRectangle(cornerRadius: 4))
+            .allowsHitTesting(false)   // let drags fall through to the window
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(watcher.track?.name ?? "")
@@ -49,6 +50,7 @@ struct ChipView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
+            .allowsHitTesting(false)
             Text(watcher.track?.artist ?? "")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
@@ -56,6 +58,7 @@ struct ChipView: View {
                 .frame(maxWidth: 140, alignment: .trailing)
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(2)
+                .allowsHitTesting(false)
 
             Button(action: watcher.addToPlaylist) {
                 Image(systemName: buttonSymbol)
