@@ -7,9 +7,12 @@ struct VisualEffect: NSViewRepresentable {
         v.material = .hudWindow
         v.blendingMode = .behindWindow
         v.state = .active
+        v.alphaValue = Settings.backgroundOpacity
         return v
     }
-    func updateNSView(_ v: NSVisualEffectView, context: Context) {}
+    func updateNSView(_ v: NSVisualEffectView, context: Context) {
+        v.alphaValue = Settings.backgroundOpacity   // picks up settings.json edits on the next track change
+    }
 }
 
 struct ChipView: View {

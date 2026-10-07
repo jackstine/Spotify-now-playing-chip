@@ -60,6 +60,16 @@ Names must match playlists you own, case-insensitive. Re-read on every use, no r
 
 `default` is the playlist used until you pick another; if it is missing or not in the list, the first entry is used. Picking is by URL only (below) and is remembered across launches, and overrides `default`. Chip "+" tooltip shows the current one.
 
+## Settings
+
+Optional, not in git. `~/.config/NowPlayingChip/settings.json` (template: `settings.example.json`):
+
+```json
+{ "backgroundOpacity": 0.5 }
+```
+
+`backgroundOpacity`: 0 (see-through) to 1 (solid), default 0.5. Text and buttons stay opaque. Edits apply on the next track change, no rebuild.
+
 ## URL commands
 
 Control the chip from outside the app (Terminal, Shortcuts, Raycast, Alfred, Stream Deck). App must be running.

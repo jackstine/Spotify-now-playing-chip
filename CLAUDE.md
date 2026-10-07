@@ -3,6 +3,7 @@
 - macOS Spotify now-playing chip (Swift, no Xcode project). See its README.md.
 - Config lives in `NowPlayingChip/.env` (gitignored): `SPOTIFY_CLIENT_ID`, optional `CHROME_PROFILE_NAME`.
 - Never read, print, or commit `.env` or its values.
+- Display settings live in `~/.config/NowPlayingChip/settings.json` (outside the repo, gitignored): `backgroundOpacity` 0–1, default 0.5. Re-read on each view update. `settings.example.json` is the tracked template.
 - Playlists live in `~/.config/NowPlayingChip/playlists.json` (outside the repo, `playlists.json` also gitignored): `default` name plus a `playlists` list of `name`/`description`. Re-read on every use. `playlists.example.json` is the tracked template.
 - Buttons: "+" add to playlist, "<<" previous, ">>" next.
 - Protocols: custom URL scheme `nowplayingchip://`, registered in `Info.plist`, handled in `AppDelegate.application(_:open:)` in `main.swift`. App must be running. Invoke with `open "nowplayingchip://<command>"`.
